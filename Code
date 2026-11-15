@@ -1,0 +1,242 @@
+// ==========================================
+// 1. Placements.aspx
+// ==========================================
+
+<%@ Page Language="C#" AutoEventWireup="true"
+    CodeBehind="Placements.aspx.cs"
+    Inherits="Practical_9.PlacementsPage" %>
+
+<!DOCTYPE html>
+<html>
+<head runat="server">
+    <title>Placement Records</title>
+</head>
+<body>
+    <form id="form1" runat="server">
+
+        <h1>Placement Records</h1>
+
+        <a href="PlacementDashboard.aspx">Back to Dashboard</a>
+        <br /><br />
+
+        <asp:GridView ID="gvPlacements" runat="server"
+            AutoGenerateColumns="true"
+            EmptyDataText="No placement records found." />
+
+    </form>
+</body>
+</html>
+
+
+// ==========================================
+// 2. PlacementDashboard.aspx
+// ==========================================
+
+<%@ Page Language="C#" AutoEventWireup="true"
+    CodeBehind="PlacementDashboard.aspx.cs"
+    Inherits="Practical_9.PlacementDashboard" %>
+
+<!DOCTYPE html>
+<html>
+<head runat="server">
+    <title>Placement Dashboard</title>
+</head>
+<body>
+    <form id="form1" runat="server">
+
+        <h1>Placement Dashboard</h1>
+
+        <p>
+            <a href="PlacementDashboard.aspx">Dashboard</a>
+            <a href="Students.aspx">Students</a>
+            <a href="Placements.aspx">Placements</a>
+            <a href="Totals.aspx">Placement Totals</a>
+        </p>
+
+        <div>
+            <div>
+                <h3>Total Students</h3>
+                <asp:Label ID="lblTotal" runat="server" Text="0" />
+            </div>
+
+            <div>
+                <h3>Placed Students</h3>
+                <asp:Label ID="lblPlaced" runat="server" Text="0" />
+            </div>
+
+            <div>
+                <h3>Not Placed</h3>
+                <asp:Label ID="lblNotPlaced" runat="server" Text="0" />
+            </div>
+
+            <div>
+                <h3>Average Package (LPA)</h3>
+                <asp:Label ID="lblAvgPackage" runat="server" Text="0.00" />
+            </div>
+        </div>
+
+    </form>
+</body>
+</html>
+
+
+// ==========================================
+// 3. Students.aspx
+// ==========================================
+
+<%@ Page Language="C#" AutoEventWireup="true"
+    CodeBehind="Students.aspx.cs"
+    Inherits="Practical_9.StudentsPage" %>
+
+<!DOCTYPE html>
+<html>
+<head runat="server">
+    <title>Students</title>
+</head>
+<body>
+    <form id="form1" runat="server">
+
+        <h1>Student Records</h1>
+
+        <a href="PlacementDashboard.aspx">Back to Dashboard</a>
+        <br /><br />
+
+        <asp:GridView ID="gvStudents" runat="server"
+            AutoGenerateColumns="true"
+            EmptyDataText="No students found." />
+
+    </form>
+</body>
+</html>
+
+
+// ==========================================
+// 4. Totals.aspx
+// ==========================================
+
+<%@ Page Language="C#" AutoEventWireup="true"
+    CodeBehind="Totals.aspx.cs"
+    Inherits="Practical_9.TotalsPage" %>
+
+<!DOCTYPE html>
+<html>
+<head runat="server">
+    <title>Placement Totals</title>
+</head>
+<body>
+    <form id="form1" runat="server">
+
+        <h1>Placement Totals</h1>
+
+        <a href="PlacementDashboard.aspx">Back to Dashboard</a>
+
+        <br /><br />
+
+        <table border="1" cellpadding="10" cellspacing="0">
+
+            <tr>
+                <th>Sr. No.</th>
+                <th>Placement Statistic</th>
+                <th>Value</th>
+            </tr>
+
+            <tr>
+                <td>1</td>
+                <td>Total Students</td>
+                <td>
+                    <asp:Label ID="lblTotal" runat="server" Text="0" />
+                </td>
+            </tr>
+
+            <tr>
+                <td>2</td>
+                <td>Placed Students</td>
+                <td>
+                    <asp:Label ID="lblPlaced" runat="server" Text="0" />
+                </td>
+            </tr>
+
+            <tr>
+                <td>3</td>
+                <td>Not Placed Students</td>
+                <td>
+                    <asp:Label ID="lblNotPlaced" runat="server" Text="0" />
+                </td>
+            </tr>
+
+            <tr>
+                <td>4</td>
+                <td>Average Package (LPA)</td>
+                <td>
+                    <asp:Label ID="lblAvgPackage" runat="server" Text="0.00" />
+                </td>
+            </tr>
+
+        </table>
+
+    </form>
+</body>
+</html>
+
+
+// ==========================================
+// 5. Totals.aspx.cs (Code Behind)
+// ==========================================
+
+using System;
+using System.Configuration;
+using System.Data.SqlClient;
+
+namespace Practical_9
+{
+    public partial class TotalsPage : System.Web.UI.Page
+    {
+        string cs = ConfigurationManager
+            .ConnectionStrings["PlacementDB"].ConnectionString;
+
+        protected void Page_Load(object sender, EventArgs e)
+        {
+            if (!IsPostBack)
+                LoadTotals();
+        }
+
+        private void LoadTotals()
+        {
+            string query = @"
+
+                SELECT
+                    COUNT(*) AS TotalStudents,
+                    SUM(CASE WHEN IsPlaced = 1
+                        THEN 1 ELSE 0 END) AS Placed,
+                    SUM(CASE WHEN IsPlaced = 0
+                        THEN 1 ELSE 0 END) AS NotPlaced
+                FROM Students;
+
+                SELECT
+                    ISNULL(AVG(PackageLPA), 0) AS AvgPackage
+                FROM Placements;";
+
+            using (SqlConnection con = new SqlConnection(cs))
+            using (SqlCommand cmd = new SqlCommand(query, con))
+            {
+                con.Open();
+
+                using (SqlDataReader dr = cmd.ExecuteReader())
+                {
+                    if (dr.Read())
+                    {
+                        lblTotal.Text = dr["TotalStudents"].ToString();
+                        lblPlaced.Text = dr["Placed"].ToString();
+                        lblNotPlaced.Text = dr["NotPlaced"].ToString();
+                    }
+
+                    if (dr.NextResult() && dr.Read())
+                    {
+                        lblAvgPackage.Text =
+                            Convert.ToDecimal(dr["AvgPackage"]).ToString("N2");
+                    }
+                }
+            }
+        }
+    }
+}
